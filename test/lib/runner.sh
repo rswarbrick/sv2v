@@ -40,6 +40,38 @@ simulate() {
     sed -i.orig -e "1,1d" "$sim_log"
 }
 
+simulateVCS() {
+    rm -rf csrc ucli.key
+
+    # arguments
+    sim_vcd="$1"; shift
+    sim_log="$1"; shift
+    sim_top="$1"; shift
+    # compile the files
+    sim_prog="$SHUNIT_TMPDIR/simprog.exe"
+    vcs_output=`vcs \
+        -o "$sim_prog" \
+        -sverilog \
+        -q \
+        +v2k \
+        +define+TEST_VCD="\"$sim_vcd\""+ \
+        +define+TEST_TOP=$sim_top+ \
+        "$SCRIPT_DIR/tb_dumper.v" \
+        "$@"`
+    assertTrue "vcs on $1 failed" $?
+    # run the simulation
+    $sim_prog > $sim_log
+    assertTrue "simulating $1 failed" $?
+    # remove the date from the VCD
+    sed -i.orig -e "1,3d" "$sim_vcd"
+    # remove variable portions of the log
+    sed -i.orig -e "\$d" "$sim_log"
+    sed -i.orig -e "\$d" "$sim_log"
+    sed -i.orig -e "1,3d" "$sim_log"
+
+    rm -rf csrc ucli.key
+}
+
 assertConverts() {
     ac_file="$1"
     ac_tmpa="$SHUNIT_TMPDIR/ac-conv-tmpa.v"
@@ -90,10 +122,18 @@ simpleTest() {
     ref_log="$SHUNIT_TMPDIR/ref.log"
     gen_log="$SHUNIT_TMPDIR/gen.log"
 
+    ## simulate and compare the two files
+    #simulate "$ref_vcd" "$ref_log" top "$ve" "$tb"
+    #simulate "$gen_vcd" "$gen_log" top "$cv" "$tb"
+    #diff "$ref_vcd" "$gen_vcd" #> /dev/null
+    #assertTrue "VCDs are different" $?
+    #output=`diff "$ref_log" "$gen_log"`
+    #assertTrue "Simulation outputs differ:\n$output" $?
+
     # simulate and compare the two files
-    simulate "$ref_vcd" "$ref_log" top "$ve" "$tb"
-    simulate "$gen_vcd" "$gen_log" top "$cv" "$tb"
-    diff "$ref_vcd" "$gen_vcd" > /dev/null
+    simulateVCS "$ref_vcd" "$ref_log" top "$ve" "$tb"
+    simulateVCS "$gen_vcd" "$gen_log" top "$sv" "$tb"
+    diff "$ref_vcd" "$gen_vcd" #> /dev/null
     assertTrue "VCDs are different" $?
     output=`diff "$ref_log" "$gen_log"`
     assertTrue "Simulation outputs differ:\n$output" $?

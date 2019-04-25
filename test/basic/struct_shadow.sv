@@ -7,13 +7,14 @@ typedef struct packed { logic y, x, w; } StructF;
 
 module top;
 
+    StructA a = 0;
+    StructB b = 0;
+    StructC c = 0;
+    StructD d = 0;
+    StructE e = 0;
+    StructF f = 0;
     integer i, j, k;
-    StructA a;
-    StructB b;
-    StructC c;
-    StructD d;
-    StructE e;
-    StructF f;
+    initial a = 3;
     initial begin
         for (i = 0; i < 2; i++) begin
             for (j = 0; j < 2; j++) begin
